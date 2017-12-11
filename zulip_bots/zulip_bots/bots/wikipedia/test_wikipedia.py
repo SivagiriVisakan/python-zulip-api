@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+from unittest.mock import patch
+from requests.exceptions import RequestException
 from zulip_bots.test_lib import StubBotTestCase
 
 class TestWikipediaBot(StubBotTestCase):
@@ -55,3 +56,17 @@ class TestWikipediaBot(StubBotTestCase):
         bot_request = ''
         bot_response = "Please enter your search term after @mention-bot"
         self.verify_reply(bot_request, bot_response)
+
+    def test_error(self) -> None:
+        bot_response = 'Uh-oh, sorry couldn\'t process the request right now.' \
+                       ':slightly_frowning_face:\nPlease try again later. '
+
+        with patch('requests.get') as request, \
+                patch('logging.error'):
+            # Set the status code other than 200 to trigger error message.
+            request.status_code = 400
+            self.verify_reply('foo', bot_response)
+
+        with patch('requests.get', side_effect = RequestException), \
+                patch('logging.error'):
+            self.verify_reply('foo', bot_response)
