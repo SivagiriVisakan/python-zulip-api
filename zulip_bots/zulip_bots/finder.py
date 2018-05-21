@@ -1,6 +1,9 @@
 import sys
+import os
 from os.path import basename, splitext
-from typing import Any, Optional, Text
+from typing import Any, Optional, Text, Tuple
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 def import_module_from_source(path: Text, name: Optional[Text]=None) -> Any:
     if not name:
@@ -21,3 +24,14 @@ def import_module_from_source(path: Text, name: Optional[Text]=None) -> Any:
         loader.exec_module(module)
 
     return module
+
+def resolve_bot_path(name: Text) -> Tuple[Text, Text]:
+    if os.path.isfile(name) or os.path.isfile(name + '.py'):
+        bot_path = os.path.abspath(name) if os.path.isfile(name) else os.path.abspath(name + '.py')
+        bot_name = splitext(basename(bot_path))[0]
+    else:
+        bot_path = os.path.abspath(os.path.join(current_dir, 'bots', name, name + '.py'))
+        bot_name = name
+    sys.path.insert(0, os.path.dirname(bot_path))
+
+    return (bot_path, bot_name)
