@@ -6,38 +6,14 @@ import sys
 import os
 from os.path import basename, splitext
 
-from typing import Any, Optional, Text
-
 from zulip_bots.lib import (
     run_message_handler_for_bot,
     NoBotConfigException,
 )
-
+import zulip_bots.finder as finder
 from zulip_bots.provision import provision_bot
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-def import_module_from_source(path: Text, name: Optional[Text]=None) -> Any:
-    if not name:
-        name = splitext(basename(path))[0]
-
-    # importlib.util.module_from_spec is supported from Python3.5
-    py_version = sys.version_info
-    if py_version.major < 3 or (py_version.major == 3 and py_version.minor < 5):
-        import imp
-        module = imp.load_source(name, path)
-    else:
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(name, path)
-        module = importlib.util.module_from_spec(spec)
-        loader = spec.loader
-        if loader is None:
-            return None
-        loader.exec_module(module)
-
-    return module
-
 
 def parse_args() -> argparse.Namespace:
     usage = '''
@@ -114,7 +90,7 @@ def main() -> None:
     if args.provision:
         provision_bot(os.path.dirname(bot_path), args.force)
 
-    lib_module = import_module_from_source(bot_path, bot_name)
+    lib_module = finder.import_module_from_source(bot_path, bot_name)
     if lib_module is None:
         print("ERROR: Could not load bot module. Exiting now.")
         sys.exit(1)
